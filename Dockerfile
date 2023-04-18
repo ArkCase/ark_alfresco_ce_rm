@@ -1,3 +1,4 @@
+## This image exists solely to maintain consistency with the way private artifacts are handled
 ARG VER="7.3.1"
 
 FROM rockylinux:8 as src
