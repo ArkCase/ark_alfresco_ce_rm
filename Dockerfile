@@ -1,23 +1,37 @@
 ## This image exists solely to maintain consistency with the way private artifacts are handled
+
+ARG PUBLIC_REGISTRY="public.ecr.aws"
+ARG ARCH="amd64"
+ARG OS="linux"
 ARG VER="7.3.1"
 
-FROM rockylinux:8 as src
+ARG BASE_REGISTRY="${PUBLIC_REGISTRY}"
+ARG BASE_REPO="arkcase/base-java"
+ARG BASE_VER="8"
+ARG BASE_VER_PFX=""
+ARG BASE_IMG="${BASE_REGISTRY}/${BASE_REPO}:${BASE_VER_PFX}${BASE_VER}"
+
+FROM "${BASE_IMG}" AS src
 
 ARG VER
-ARG ARCHIVE_NAME="alfresco-governance-services-community-distribution-${VER}.zip"
-ARG SRC_URL="https://nexus.alfresco.com/nexus/service/local/repositories/releases/content/org/alfresco/alfresco-governance-services-community-distribution/${VER}/${ARCHIVE_NAME}"
+ARG TARGET="/alfresco-governance-services-community-distribution-${VER}.zip"
+ARG REPO="https://nexus.alfresco.com/nexus/repository/releases"
+ARG SRC="org.alfresco:alfresco-governance-services-community-distribution:${VER}:zip"
+ARG ARTIFACTS="/artifacts"
 
-ADD "${SRC_URL}" "/"
 RUN yum -y install unzip && \
-    mkdir -p "/artifacts" && \
-    cd "/artifacts" && \
-    unzip "/${ARCHIVE_NAME}"
+    mvn-get "${SRC}" "${REPO}" "${TARGET}" && \
+    mkdir -p "${ARTIFACTS}" && \
+    unzip -d "${ARTIFACTS}" "${TARGET}"
 
 FROM scratch
+
+ARG ARTIFACTS
+ARG VER
 
 LABEL ORG="ArkCase LLC" \
       MAINTAINER="Armedia Devops Team <devops@armedia.com>" \
       APP="Alfresco CE Records Management Artifacts" \
       VERSION="${VER}"
 
-COPY --from=src "/artifacts"/*.amp /
+COPY --from=src "${ARTIFACTS}"/*.amp /
